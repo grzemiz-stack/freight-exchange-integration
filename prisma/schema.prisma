@@ -1,0 +1,58 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Minimalny stub Company — tylko relacje potrzebne do wycinka ──────────────
+model Company {
+  id   String @id @default(uuid())
+  name String
+
+  exchangeConnections ExchangeConnection[]
+  publishedOffers     PublishedOffer[]
+}
+
+// ── EXCHANGE CONNECTIONS (Trans.eu, Timocom OAuth) ────────────────────────────
+model ExchangeConnection {
+  id                   String   @id @default(cuid())
+  companyId            String
+  exchange             String
+  accessToken          String
+  refreshToken         String
+  accessTokenExpiresAt DateTime
+  scope                String   @default("")
+  status               String   @default("ACTIVE")
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@unique([companyId, exchange], name: "companyId_exchange")
+  @@index([companyId])
+}
+
+// ── PUBLISHED OFFERS (historia publikacji na gieldach) ───────────────────────
+model PublishedOffer {
+  id              String    @id @default(cuid())
+  companyId       String
+  exchange        String
+  externalOfferId String
+  originCity      String
+  originCountry   String
+  destCity        String
+  destCountry     String
+  weightKg        Float
+  publishedAt     DateTime  @default(now())
+  expiresAt       DateTime?
+  status          String    @default("ACTIVE")
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+  @@index([exchange])
+}
